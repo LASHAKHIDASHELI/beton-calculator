@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>ბეტონის კალკულატორი</title>
+<style>
+  :root{
+    --bg:#f4f6f8;
+    --card:#ffffff;
+    --ink:#12181f;
+    --muted:#6b7783;
+    --line:#dfe5ea;
+    --field:#f7f9fb;
+    --accent:#0d5bd4;
+    --accent-ink:#ffffff;
+    --ok:#0f9d58;
+    --warn-bg:#fff6e5;
+    --warn-line:#f0c674;
+    --radius:12px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1418; --card:#161d23; --ink:#e9eef3; --muted:#93a1ad;
+      --line:#26323b; --field:#1d262e; --accent:#4a90ff; --warn-bg:#2b2410; --warn-line:#6b5320;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"BPG Nino Mtavruli","Helvetica Neue",Arial,"Noto Sans Georgian",sans-serif;
+    font-size:15px; line-height:1.5;
+  }
+  .wrap{max-width:1120px; margin:0 auto; padding:28px 18px 160px;}
+  h1{font-size:26px; margin:0 0 22px; font-weight:600;}
+  .card{
+    background:var(--card); border:1px solid var(--line);
+    border-radius:var(--radius); padding:22px; margin-bottom:16px; position:relative;
+  }
+  .row{display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px;}
+  .row:last-child{margin-bottom:0}
+  .grp{flex:1 1 260px; min-width:0; position:relative;}
+  label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px;}
+  .inp{
+    width:100%; height:46px; padding:0 14px; border:1px solid var(--line);
+    border-radius:8px; background:var(--field); color:var(--ink); font:inherit; outline:none;
+  }
+  .inp:disabled,.inp[readonly]{color:var(--muted); cursor:default;}
+  .inp:focus{border-color:var(--accent);}
+  .strong{font-weight:600; color:var(--ink) !important;}
+
+  /* number field with steppers */
+  .numwrap{position:relative;}
+  .numwrap .inp{padding-right:64px;}
+  .numwrap input::-webkit-outer-spin-button,
+  .numwrap input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .numwrap input[type=number]{-moz-appearance:textfield}
+  .steps{position:absolute; right:8px; top:0; height:46px; display:flex; align-items:center; gap:2px;}
+  .steps button{
+    width:26px; height:26px; border:1px solid var(--line); background:var(--card);
+    color:var(--ink); border-radius:6px; cursor:pointer; font-size:16px; line-height:1; padding:0;
+  }
+  .steps button:hover{border-color:var(--accent); color:var(--accent);}
+
+  /* dropdown */
+  .dd{position:relative;}
+  .dd__sel{
+    height:46px; padding:0 40px 0 14px; border:1px solid var(--line); border-radius:8px;
+    background:var(--field); display:flex; align-items:center; cursor:pointer;
+    color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .dd__sel.has{color:var(--ink);}
+  .dd.open .dd__sel{border-color:var(--accent);}
+  .dd__arrow{position:absolute; right:14px; top:18px; pointer-events:none; color:var(--muted);
+    border:5px solid transparent; border-top-color:currentColor;}
+  .dd__clear{
+    position:absolute; right:34px; top:13px; width:20px; height:20px; border:0; padding:0;
+    background:transparent; color:var(--muted); cursor:pointer; font-size:17px; line-height:20px;
+  }
+  .dd__clear:hover{color:var(--ink);}
+  .dd__list{
+    display:none; position:absolute; z-index:40; left:0; right:0; top:52px;
+    background:var(--card); border:1px solid var(--line); border-radius:8px;
+    box-shadow:0 12px 32px rgba(0,0,0,.16); overflow:hidden;
+  }
+  .dd.open .dd__list{display:block;}
+  .dd__search{padding:8px; border-bottom:1px solid var(--line);}
+  .dd__search input{
+    width:100%; height:36px; padding:0 10px; border:1px solid var(--line);
+    border-radius:6px; background:var(--field); color:var(--ink); font:inherit; outline:none;
+  }
+  .dd__search input:focus{border-color:var(--accent);}
+  .dd__items{max-height:260px; overflow-y:auto; margin:0; padding:0; list-style:none;}
+  .dd__items li{padding:10px 14px; cursor:pointer; font-size:14px;}
+  .dd__items li:hover,.dd__items li.active{background:var(--field); color:var(--accent);}
+  .dd__items li.empty{color:var(--muted); cursor:default;}
+  .dd__items li.empty:hover{background:transparent; color:var(--muted);}
+  .dd__items li .p{float:left; color:var(--muted); font-size:13px;}
+
+  .note{
+    display:flex; gap:8px; align-items:flex-start; font-size:13px; color:var(--muted);
+    margin-top:8px;
+  }
+  .warn{
+    background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:8px;
+    padding:12px 14px; font-size:13px; margin-bottom:16px;
+  }
+  .act{
+    position:absolute; top:-11px; background:var(--card); border:1px solid var(--line);
+    border-radius:20px; padding:3px 14px; font-size:13px; cursor:pointer; color:var(--muted);
+    user-select:none;
+  }
+  .act:hover{border-color:var(--accent); color:var(--accent);}
+  .act--add{right:22px;}
+  .act--del{left:22px;}
+
+  /* sticky summary */
+  .sticky{
+    position:fixed; left:0; right:0; bottom:0; background:var(--card);
+    border-top:1px solid var(--line); box-shadow:0 -6px 24px rgba(0,0,0,.10); z-index:50;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .sticky__in{
+    max-width:1120px; margin:0 auto; padding:14px 18px; display:flex; gap:28px;
+    align-items:center; flex-wrap:wrap;
+  }
+  .sum h3{margin:0 0 2px; font-size:12px; font-weight:400; color:var(--muted);}
+  .sum .v{font-size:20px; font-weight:600; white-space:nowrap;}
+  .sum .v.big{font-size:26px; color:var(--accent);}
+  .spacer{flex:1}
+  .trips{font-size:13px; color:var(--muted);}
+
+  /* ---------------- მობილური ---------------- */
+  @media (max-width:640px){
+    .wrap{padding:18px 12px 190px;}
+    h1{font-size:21px; margin-bottom:16px;}
+    .card{padding:16px 14px; border-radius:10px;}
+    .row{gap:12px; margin-bottom:12px;}
+
+    /* iOS არ გაადიდოს გვერდი ფოკუსზე — შრიფტი >= 16px */
+    .inp, .dd__sel, .dd__search input{font-size:16px;}
+    .inp, .dd__sel{height:48px;}
+
+    /* თითისთვის მოხერხებული +/- */
+    .numwrap .inp{padding-right:92px;}
+    .steps{height:48px; gap:4px; right:6px;}
+    .steps button{width:38px; height:38px; font-size:20px;}
+
+    /* მოკლე ველები გვერდიგვერდ — ბარათი რომ არ გაიწელოს */
+    .row--pair{flex-wrap:nowrap; gap:10px;}
+    .row--pair .grp{flex:1 1 0; min-width:0;}
+
+    .dd__items{max-height:44vh;}
+    .dd__list{top:54px;}
+
+    /* ღილაკები ნაკადში, ბარათის ბოლოს — გადაფარვის გარეშე */
+    .act{
+      position:static; display:inline-block; top:auto; left:auto; right:auto;
+      margin:14px 8px 0 0; padding:8px 16px; font-size:13px;
+    }
+
+    .sticky__in{gap:0 14px; padding:10px 12px;}
+    .sum{flex:0 0 auto;}
+    .sum h3{font-size:11px;}
+    .sum .v{font-size:16px;}
+    .sum .v.big{font-size:21px;}
+    .spacer{display:none;}
+    .trips{flex:1 0 100%; margin-top:2px; font-size:12px;}
+  }
+  @media (max-width:360px){
+    .sum .v{font-size:15px} .sum .v.big{font-size:18px}
+    .numwrap .inp{padding-right:86px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ბეტონის კალკულატორი</h1>
+  <div id="blocks"></div>
+
+  <div class="note" style="margin-top:14px">
+    ფასი მოცემულია ბეტონის ტუმბოსა და ლაბორატორიის გარეშე. ტრანსპორტირება ითვლება
+    <b>რეისზე</b> — ერთი მიქსერი ეტევა 12&nbsp;მ³.
+  </div>
+</div>
+
+<div class="sticky">
+  <div class="sticky__in">
+    <div class="sum">
+      <h3>ერთეულის ფასი</h3>
+      <div class="v" id="sumSingle">0.00 ₾</div>
+    </div>
+    <div class="sum">
+      <h3>ჯამური ღირებულება</h3>
+      <div class="v big" id="sumTotal">0.00 ₾</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="trips" id="sumTrips"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ *
+ *  მონაცემები
+ * ------------------------------------------------------------------ */
+
+var TRUCK = 12; // ერთი მიქსერის ტევადობა, მ³
+
+var MARKS = [
+  { id: 41, title: "B7.5 (C8/10)", code: "B7.5", price: 202.58 },
+  { id: 27, title: "B-25 S4", code: "B25 S4", price: 224.58 },
+  { id: 13, title: "B-25 W6", code: "B25 W6", price: 225.58 },
+  { id: 62, title: "B-25 W8", code: "B25 W8", price: 227.58 },
+  { id: 8, title: "B30 (C30/37)", code: "B30", price: 227.58 },
+  { id: 54, title: "B-35", code: "B35", price: 237.58 },
+  { id: 19, title: "B-35 S4", code: "B35 S4", price: 244.58 },
+  { id: 36, title: "B-35 W6", code: "B35 W6", price: 245.58 },
+  { id: 70, title: "B-35 W8", code: "B35 W8", price: 247.58 }
+];
+
+var LOCATIONS = [
+  { id: 118, title: "გლდანი",                          shippingPrice: 185 },
+  { id: 43,  title: "ვაჟა ფშაველას კვარტლები",         shippingPrice: 295 },
+  { id: 91,  title: "მცხეთა",                          shippingPrice: 260 },
+  { id: 12,  title: "ისანი",                           shippingPrice: 200 },
+  { id: 77,  title: "შატბერაშვილის ქ.",                shippingPrice: 410 },
+  { id: 5,   title: "დიდი დიღომი",                     shippingPrice: 175 },
+  { id: 64,  title: "ყაზბეგის გამზ.",                  shippingPrice: 270 },
+  { id: 103, title: "საგურამო",                        shippingPrice: 340 },
+  { id: 29,  title: "ორთაჭალა",                        shippingPrice: 320 },
+  { id: 86,  title: "ვარკეთილი",                       shippingPrice: 190 },
+  { id: 51,  title: "ფალიაშვილის ქ.",                  shippingPrice: 350 },
+  { id: 20,  title: "ლილო, გეზი",                      shippingPrice: 240 },
+  { id: 110, title: "თემქა",                           shippingPrice: 185 },
+  { id: 38,  title: "ოქროყანა",                        shippingPrice: 390 },
+  { id: 73,  title: "კეკელიძეს ქ.",                    shippingPrice: 410 },
+  { id: 9,   title: "სამგორი",                         shippingPrice: 200 },
+  { id: 95,  title: "ორხევი",                          shippingPrice: 245 },
+  { id: 56,  title: "ჭავჭავაძის გამზ.",                shippingPrice: 350 },
+  { id: 24,  title: "ნატახტარი",                       shippingPrice: 260 },
+  { id: 82,  title: "აფრიკის დასახლება",               shippingPrice: 190 },
+  { id: 46,  title: "ბაგები",                          shippingPrice: 350 },
+  { id: 15,  title: "დიღომი 7/8/9",                    shippingPrice: 180 },
+  { id: 68,  title: "პოლიტკოვსკაიას ქ.",               shippingPrice: 255 },
+  { id: 107, title: "მუხიანი",                         shippingPrice: 185 },
+  { id: 33,  title: "ელია",                            shippingPrice: 240 },
+  { id: 89,  title: "ლისის ტბის მიმ. ტერ.",            shippingPrice: 310 },
+  { id: 60,  title: "რუსთავი",                         shippingPrice: 260 },
+  { id: 17,  title: "ნახალოვკა",                       shippingPrice: 200 },
+  { id: 99,  title: "ქავთარაძის ქ.",                   shippingPrice: 295 },
+  { id: 26,  title: "წეროვანი",                        shippingPrice: 260 },
+  { id: 71,  title: "ცაგარელის ქ.",                    shippingPrice: 270 },
+  { id: 113, title: "დიღმის მასივი",                   shippingPrice: 185 },
+  { id: 35,  title: "ავლაბარი",                        shippingPrice: 240 },
+  { id: 48,  title: "ძეგვი",                           shippingPrice: 420 },
+  { id: 79,  title: "უნივერსიტეტის ქ.",                shippingPrice: 310 },
+  { id: 22,  title: "ვაზისუბანი",                      shippingPrice: 190 },
+  { id: 93,  title: "კახეთის გზატკეცილი, პეპელა",      shippingPrice: 245 },
+  { id: 58,  title: "მინდელის ქ.",                     shippingPrice: 320 },
+  { id: 116, title: "სოფ. დიღომი",                     shippingPrice: 185 },
+  { id: 66,  title: "ჟვანიას ქ.",                      shippingPrice: 410 },
+  { id: 31,  title: "კრწანისი",                        shippingPrice: 240 },
+  { id: 84,  title: "თბილისის აეროპორტის მიმ. ტერ.",   shippingPrice: 210 },
+  { id: 53,  title: "კარტოზიას ქ.",                    shippingPrice: 270 },
+  { id: 41,  title: "ნუცუბიძე",                        shippingPrice: 300 },
+  { id: 101, title: "სანზონა",                         shippingPrice: 185 },
+  { id: 75,  title: "მუხრანი",                         shippingPrice: 390 },
+  { id: 63,  title: "აბაშიძის ქ.",                     shippingPrice: 350 },
+  { id: 7,   title: "ივერთუბანი",                      shippingPrice: 210 },
+  { id: 97,  title: "მისაქციელი",                      shippingPrice: 260 },
+  { id: 44,  title: "ასათიანის ქ.",                    shippingPrice: 270 },
+  { id: 105, title: "დიდუბე",                          shippingPrice: 200 }
+];
+
+/* ------------------------------------------------------------------ *
+ *  ფორმულა  (იდენტური beton.ge-ის ლოგიკისა)
+ * ------------------------------------------------------------------ */
+
+function tripCount(qty){
+  if (!isFinite(qty) || qty <= 0) return 0;
+  return Math.ceil(qty / TRUCK);
+}
+
+function blockTotal(block){
+  var qty  = isFinite(block.quantity) ? block.quantity : 0;
+  var mark = block.mark ? block.mark.price : 0;
+  var ship = block.location ? block.location.shippingPrice : 0;
+  return qty * mark + tripCount(qty) * ship;
+}
+
+function blockShipping(block){
+  if (!block.location) return 0;
+  return tripCount(block.quantity) * block.location.shippingPrice;
+}
+
+function blockSingle(block){
+  var qty = isFinite(block.quantity) ? block.quantity : 0;
+  var p = blockTotal(block) / qty;
+  return isFinite(p) ? p : 0;
+}
+
+function orderTotal(blocks){
+  var t = 0;
+  for (var i = 0; i < blocks.length; i++) t += blockTotal(blocks[i]);
+  return t;
+}
+
+function orderSingle(blocks){
+  var q = 0;
+  for (var i = 0; i < blocks.length; i++){
+    var v = blocks[i].quantity;
+    if (isFinite(v)) q += v;
+  }
+  var p = orderTotal(blocks) / q;
+  return isFinite(p) ? p : 0;
+}
+
+function orderTrips(blocks){
+  var n = 0;
+  for (var i = 0; i < blocks.length; i++) n += tripCount(blocks[i].quantity);
+  return n;
+}
+
+/* გამოტანილია ტესტებისთვის */
+if (typeof module !== "undefined" && module.exports){
+  module.exports = { TRUCK: TRUCK, MARKS: MARKS, LOCATIONS: LOCATIONS,
+    tripCount: tripCount, blockTotal: blockTotal, blockSingle: blockSingle,
+    blockShipping: blockShipping, orderTotal: orderTotal, orderSingle: orderSingle };
+}
+
+/* ------------------------------------------------------------------ *
+ *  UI
+ * ------------------------------------------------------------------ */
+
+var money = function(v){
+  if (!isFinite(v)) v = 0;
+  return v.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+var blocks = [];
+var host = document.getElementById("blocks");
+
+function makeBlock(){
+  return { mark: null, location: null, quantity: NaN, otherLocation: false };
+}
+
+/* --- ჩამოსაშლელი სია ძებნით ------------------------------------- */
+function buildDropdown(opts){
+  var wrap = document.createElement("div");
+  wrap.className = "dd";
+  wrap.innerHTML =
+    '<div class="dd__sel">' + opts.placeholder + '</div>' +
+    '<button class="dd__clear" type="button" title="გასუფთავება" style="display:none">&times;</button>' +
+    '<i class="dd__arrow"></i>' +
+    '<div class="dd__list">' +
+      '<div class="dd__search"><input type="text" placeholder="ძებნა..." /></div>' +
+      '<ul class="dd__items"></ul>' +
+    '</div>';
+
+  var sel    = wrap.querySelector(".dd__sel");
+  var clear  = wrap.querySelector(".dd__clear");
+  var search = wrap.querySelector(".dd__search input");
+  var list   = wrap.querySelector(".dd__items");
+  var chosen = null;
+
+  function filtered(){
+    var q = search.value.trim().toLowerCase();
+    if (!q) return opts.items.slice();
+    return opts.items
+      .filter(function(it){ return it.title.toLowerCase().indexOf(q) >= 0; })
+      .sort(function(a, b){
+        var as = a.title.toLowerCase().indexOf(q) === 0;
+        var bs = b.title.toLowerCase().indexOf(q) === 0;
+        if (as !== bs) return as ? -1 : 1;
+        return a.title.localeCompare(b.title, "ka");
+      });
+  }
+
+  function render(){
+    var items = filtered();
+    list.innerHTML = "";
+    if (!items.length && !opts.showOther){
+      var e = document.createElement("li");
+      e.className = "empty";
+      e.textContent = "ვერ მოიძებნა";
+      list.appendChild(e);
+    }
+    items.forEach(function(it){
+      var li = document.createElement("li");
+      li.textContent = it.title;
+      if (chosen && chosen.id === it.id && chosen.title === it.title) li.className = "active";
+      li.addEventListener("mousedown", function(ev){
+        ev.preventDefault();
+        pick(it, false);
+      });
+      list.appendChild(li);
+    });
+    if (opts.showOther && !search.value.trim()){
+      var li2 = document.createElement("li");
+      li2.textContent = "სხვა მისამართი";
+      li2.addEventListener("mousedown", function(ev){
+        ev.preventDefault();
+        pick(null, true);
+      });
+      list.appendChild(li2);
+    }
+  }
+
+  function open(){
+    document.querySelectorAll(".dd.open").forEach(function(d){
+      if (d !== wrap) d.classList.remove("open");
+    });
+    wrap.classList.add("open");
+    search.value = "";
+    render();
+    search.focus();
+  }
+  function close(){ wrap.classList.remove("open"); }
+
+  function pick(item, other){
+    chosen = item;
+    if (item){
+      sel.textContent = item.title;
+      sel.classList.add("has");
+    } else if (other){
+      sel.textContent = "სხვა მისამართი";
+      sel.classList.add("has");
+    } else {
+      sel.textContent = opts.placeholder;
+      sel.classList.remove("has");
+    }
+    clear.style.display = (item || other) ? "block" : "none";
+    close();
+    opts.onChange(item, !!other);
+  }
+
+  sel.addEventListener("click", function(){
+    wrap.classList.contains("open") ? close() : open();
+  });
+  clear.addEventListener("click", function(ev){
+    ev.stopPropagation();
+    pick(null, false);
+  });
+  search.addEventListener("input", render);
+  search.addEventListener("keydown", function(ev){
+    if (ev.key === "Escape") close();
+    if (ev.key === "Enter"){
+      var items = filtered();
+      if (items.length) pick(items[0], false);
+    }
+  });
+  document.addEventListener("mousedown", function(ev){
+    if (!wrap.contains(ev.target)) close();
+  });
+
+  return wrap;
+}
+
+/* --- ერთი ბლოკის რენდერი ---------------------------------------- */
+function renderBlock(block, index){
+  var card = document.createElement("div");
+  card.className = "card";
+
+  card.innerHTML =
+    '<div class="warn" data-warn style="display:none">' +
+      'არჩეულია „სხვა მისამართი“ — ღირებულება დათვლილია მხოლოდ ქარხნის ფასით, ' +
+      'ტრანსპორტირების გარეშე. ზუსტი ტარიფისთვის დაგვიკავშირდით.' +
+    '</div>' +
+    '<div class="row">' +
+      '<div class="grp"><label>ბეტონის სიმტკიცის კლასი</label><div data-mark></div></div>' +
+      '<div class="grp"><label>კოდი</label>' +
+        '<input class="inp" data-code readonly placeholder="0000" /></div>' +
+    '</div>' +
+    '<div class="row">' +
+      '<div class="grp"><label>რაოდენობა (მ³)</label>' +
+        '<div class="numwrap">' +
+          '<input class="inp" type="number" min="0" step="0.5" placeholder="0" data-qty />' +
+          '<div class="steps">' +
+            '<button type="button" data-minus>&minus;</button>' +
+            '<button type="button" data-plus>+</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="grp"><label>ქარხნის ფასი / მ³</label>' +
+        '<input class="inp" data-fprice readonly placeholder="0.00" /></div>' +
+    '</div>' +
+    '<div class="row">' +
+      '<div class="grp"><label>მიწოდების ადგილი</label><div data-loc></div></div>' +
+      '<div class="grp"><label>ტრანსპორტირების ფასი / რეისი</label>' +
+        '<input class="inp" data-sprice readonly placeholder="0.00" /></div>' +
+    '</div>' +
+    '<div class="row row--pair">' +
+      '<div class="grp"><label>მთლიანი ღირებულება</label>' +
+        '<input class="inp strong" data-total readonly placeholder="0.00" /></div>' +
+      '<div class="grp"><label>ფასი 1 მ³</label>' +
+        '<input class="inp strong" data-single readonly placeholder="0.00" /></div>' +
+    '</div>' +
+    '<div class="note" data-trips></div>';
+
+  // მარკის სია
+  card.querySelector("[data-mark]").appendChild(buildDropdown({
+    items: MARKS,
+    placeholder: "აირჩიეთ კლასი",
+    showOther: false,
+    onChange: function(item){
+      block.mark = item;
+      refresh();
+    }
+  }));
+
+  // ლოკაციის სია
+  card.querySelector("[data-loc]").appendChild(buildDropdown({
+    items: LOCATIONS,
+    placeholder: "აირჩიეთ მისამართი",
+    showOther: true,
+    onChange: function(item, other){
+      block.location = item;
+      block.otherLocation = other;
+      refresh();
+    }
+  }));
+
+  var qty = card.querySelector("[data-qty]");
+  qty.addEventListener("input", function(){
+    var v = parseFloat(qty.value);
+    block.quantity = isFinite(v) && v >= 0 ? v : NaN;
+    refresh();
+  });
+  function bump(delta){
+    var v = isFinite(block.quantity) ? block.quantity : 0;
+    v = Math.round((v + delta) * 100) / 100;
+    if (v < 0) v = 0;
+    block.quantity = v;
+    qty.value = v;
+    refresh();
+  }
+  card.querySelector("[data-minus]").addEventListener("click", function(){ bump(-1); });
+  card.querySelector("[data-plus]").addEventListener("click",  function(){ bump(1); });
+
+  // დამატება / წაშლა
+  if (index === blocks.length - 1){
+    var add = document.createElement("div");
+    add.className = "act act--add";
+    add.textContent = "+ დაამატე ბეტონის კლასი";
+    add.addEventListener("click", function(){
+      blocks.push(makeBlock());
+      renderAll();
+    });
+    card.appendChild(add);
+  }
+  if (blocks.length > 1){
+    var del = document.createElement("div");
+    del.className = "act act--del";
+    del.textContent = "× წაშალე";
+    del.addEventListener("click", function(){
+      blocks.splice(blocks.indexOf(block), 1);
+      renderAll();
+    });
+    card.appendChild(del);
+  }
+
+  block._el = card;
+  return card;
+}
+
+/* --- გამოთვლილი მნიშვნელობების განახლება ------------------------ */
+function refresh(){
+  blocks.forEach(function(b){
+    var el = b._el;
+    if (!el) return;
+    el.querySelector("[data-warn]").style.display = b.otherLocation ? "block" : "none";
+    el.querySelector("[data-code]").value   = b.mark ? b.mark.code : "";
+    el.querySelector("[data-fprice]").value = b.mark ? money(b.mark.price) : "";
+    el.querySelector("[data-sprice]").value = b.location ? money(b.location.shippingPrice) : "";
+
+    var total = blockTotal(b);
+    el.querySelector("[data-total]").value  = money(total);
+    el.querySelector("[data-single]").value = money(blockSingle(b));
+
+    var n = tripCount(b.quantity);
+    el.querySelector("[data-trips]").textContent = n
+      ? n + " რეისი × " + TRUCK + " მ³ = " + money(blockShipping(b)) + " ₾ ტრანსპორტირება"
+      : "";
+  });
+
+  document.getElementById("sumTotal").textContent  = money(orderTotal(blocks)) + " ₾";
+  document.getElementById("sumSingle").textContent = money(orderSingle(blocks)) + " ₾";
+  var t = orderTrips(blocks);
+  document.getElementById("sumTrips").textContent = t ? "სულ " + t + " რეისი" : "";
+}
+
+function renderAll(){
+  host.innerHTML = "";
+  blocks.forEach(function(b, i){
+    b._el = null;
+    host.appendChild(renderBlock(b, i));
+    // აღვადგინოთ შეყვანილი რაოდენობა
+    if (isFinite(b.quantity)) b._el.querySelector("[data-qty]").value = b.quantity;
+    // აღვადგინოთ არჩეული მნიშვნელობები
+    if (b.mark){
+      var m = b._el.querySelector("[data-mark] .dd__sel");
+      m.textContent = b.mark.title; m.classList.add("has");
+      b._el.querySelector("[data-mark] .dd__clear").style.display = "block";
+    }
+    if (b.location || b.otherLocation){
+      var l = b._el.querySelector("[data-loc] .dd__sel");
+      l.textContent = b.location ? b.location.title : "სხვა მისამართი";
+      l.classList.add("has");
+      b._el.querySelector("[data-loc] .dd__clear").style.display = "block";
+    }
+  });
+  refresh();
+}
+
+blocks.push(makeBlock());
+renderAll();
+</script>
+</body>
+</html>
